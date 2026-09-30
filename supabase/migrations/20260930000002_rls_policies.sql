@@ -30,6 +30,24 @@ AS $$
   );
 $$;
 
+-- ---------------------------------------------------------------------------
+-- Helper: current_user_role()
+--
+-- SECURITY: SECURITY DEFINER with a locked search_path breaks the infinite
+-- recursion that would occur if a plain subquery on public.profiles were used
+-- inside an RLS policy on the same table (PostgreSQL error 42P17).
+-- The function runs under the definer's privileges and bypasses RLS entirely,
+-- so it can safely read the stored role without triggering the policy again.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.current_user_role()
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT role FROM public.profiles WHERE id = auth.uid();
+$$;
+
 -- =============================================================================
 -- profiles policies
 -- =============================================================================
@@ -62,8 +80,9 @@ CREATE POLICY "profiles_update_own" ON public.profiles
   USING (auth.uid() = id)
   WITH CHECK (
     auth.uid() = id
-    -- Prevent self-elevation: new role must equal the current stored role
-    AND role = (SELECT role FROM public.profiles WHERE id = auth.uid())
+    -- Prevent self-elevation: uses SECURITY DEFINER function to avoid the
+    -- infinite recursion (42P17) that a direct subquery on this table causes.
+    AND role = public.current_user_role()
   );
 
 -- Super admin may read any profile.
