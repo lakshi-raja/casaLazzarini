@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_exceptions.dart';
+import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/cl_colors.dart';
 import '../../../core/theme/cl_radius.dart';
 import '../../../core/theme/cl_spacing.dart';
@@ -11,10 +12,7 @@ import '../../../shared/models/booking.dart';
 import '../../../shared/models/booking_status.dart';
 import '../../../shared/models/booking_type.dart';
 import '../../../shared/models/suite.dart';
-import '../../../shared/widgets/cl_dialog.dart';
 import '../../../shared/widgets/cl_empty_state.dart';
-import '../../../shared/widgets/cl_primary_button.dart';
-import '../../../shared/widgets/cl_secondary_button.dart';
 import '../domain/booking_providers.dart';
 
 class MyBookingsScreen extends ConsumerWidget {
@@ -142,7 +140,7 @@ class _SectionLabel extends StatelessWidget {
 
 // ── Individual booking card ────────────────────────────────────────────────
 
-class _BookingCard extends ConsumerWidget {
+class _BookingCard extends StatelessWidget {
   const _BookingCard({required this.booking, required this.suite});
 
   final Booking booking;
@@ -164,93 +162,57 @@ class _BookingCard extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final d = booking.bookingDate;
     final dateLabel = '${d.day} ${_italianMonths[d.month - 1]} ${d.year}';
-    final isActive = booking.status == BookingStatus.active;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: CLSpacing.base),
-      padding: const EdgeInsets.all(CLSpacing.xl),
-      decoration: BoxDecoration(
-        color: CLColors.surface,
-        borderRadius: CLRadius.lgAll,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  suite?.displayName ?? '—',
-                  style: CLTypography.label,
-                ),
-              ),
-              const SizedBox(width: CLSpacing.sm),
-              _StatusBadge(status: booking.status),
-            ],
-          ),
-          const SizedBox(height: CLSpacing.xs),
-          Text(
-            '$dateLabel  ·  ${booking.bookingType.italianLabel}',
-            style: CLTypography.caption,
-          ),
-          if (isActive) ...[
-            const SizedBox(height: CLSpacing.base),
-            CLSecondaryButton(
-              label: 'Cancella prenotazione',
-              onPressed: () => _confirmCancel(context, ref),
+    return GestureDetector(
+      onTap: () => context.push(AppRoutes.bookingDetailPath(booking.id)),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: CLSpacing.base),
+        padding: const EdgeInsets.all(CLSpacing.xl),
+        decoration: BoxDecoration(
+          color: CLColors.surface,
+          borderRadius: CLRadius.lgAll,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 2),
             ),
           ],
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    suite?.displayName ?? '—',
+                    style: CLTypography.label,
+                  ),
+                ),
+                const SizedBox(width: CLSpacing.sm),
+                _StatusBadge(status: booking.status),
+                const SizedBox(width: CLSpacing.xs),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 16,
+                  color: CLColors.textMuted,
+                ),
+              ],
+            ),
+            const SizedBox(height: CLSpacing.xs),
+            Text(
+              '$dateLabel  ·  ${booking.bookingType.italianLabel}',
+              style: CLTypography.caption,
+            ),
+          ],
+        ),
       ),
     );
-  }
-
-  Future<void> _confirmCancel(BuildContext context, WidgetRef ref) async {
-    final confirmed = await CLDialog.show<bool>(
-      context: context,
-      title: 'Cancella prenotazione',
-      content: const Text(
-        'Sei sicuro di voler cancellare questa prenotazione? '
-        'L\'operazione non è reversibile.',
-      ),
-      actions: [
-        CLSecondaryButton(
-          label: 'Mantieni',
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        CLPrimaryButton(
-          label: 'Cancella',
-          onPressed: () => Navigator.of(context).pop(true),
-        ),
-      ],
-    );
-
-    if (confirmed != true) return;
-
-    try {
-      await ref.read(bookingActionsProvider.notifier).cancelBooking(booking.id);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Prenotazione cancellata.')),
-        );
-      }
-    } on AppException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.message)));
-      }
-    }
   }
 }
 

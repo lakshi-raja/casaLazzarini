@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/routing/app_routes.dart';
 import '../../core/theme/cl_colors.dart';
 import '../../core/theme/cl_typography.dart';
 
@@ -9,7 +11,7 @@ import '../../core/theme/cl_typography.dart';
 /// standard gestional look. Selected state uses olive; unselected uses muted.
 ///
 /// Items: Home (0), Prenota (1), Profilo (2).
-/// Items 1 and 2 are Phase 2/3 placeholders — [onTap] is null until implemented.
+/// Each item navigates to its top-level route via [context.go].
 class CLBottomNavigation extends StatelessWidget {
   const CLBottomNavigation({super.key, required this.currentIndex});
 
@@ -35,21 +37,21 @@ class CLBottomNavigation extends StatelessWidget {
                 activeIcon: Icons.home_rounded,
                 label: 'Home',
                 isSelected: currentIndex == 0,
-                onTap: () {},
+                onTap: () => context.go(AppRoutes.home),
               ),
               _NavItem(
                 icon: Icons.calendar_month_outlined,
                 activeIcon: Icons.calendar_month_rounded,
                 label: 'Prenota',
                 isSelected: currentIndex == 1,
-                onTap: null, // Phase 2
+                onTap: () => context.go(AppRoutes.booking),
               ),
               _NavItem(
                 icon: Icons.person_outline_rounded,
                 activeIcon: Icons.person_rounded,
                 label: 'Profilo',
                 isSelected: currentIndex == 2,
-                onTap: null, // Phase 3
+                onTap: () => context.go(AppRoutes.profile),
               ),
             ],
           ),

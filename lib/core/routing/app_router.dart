@@ -8,8 +8,10 @@ import '../../features/auth/domain/auth_providers.dart';
 import '../../features/auth/presentation/auth_loading_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/bookings/presentation/booking_calendar_screen.dart';
+import '../../features/bookings/presentation/booking_detail_screen.dart';
 import '../../features/bookings/presentation/my_bookings_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
 import 'app_routes.dart';
 
 class _RouterNotifier extends ChangeNotifier {
@@ -82,6 +84,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.myBookings,
         pageBuilder: (context, state) =>
             const NoTransitionPage(child: MyBookingsScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.bookingDetail,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['bookingId']!;
+          return NoTransitionPage(child: BookingDetailScreen(bookingId: id));
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.profile,
+        pageBuilder: (context, state) =>
+            const NoTransitionPage(child: ProfileScreen()),
       ),
       GoRoute(
         path: AppRoutes.admin,
