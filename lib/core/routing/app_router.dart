@@ -29,7 +29,8 @@ class _RouterNotifier extends ChangeNotifier {
 
     final onSplash = location == AppRoutes.splash;
     final onLogin = location == AppRoutes.login;
-    final onAdmin = location == AppRoutes.admin;
+    // startsWith covers all admin sub-routes (e.g. /admin/bookings)
+    final onAdmin = location.startsWith(AppRoutes.admin);
 
     if (!auth.isAuthenticated) {
       if (onLogin) return null;
