@@ -16,11 +16,11 @@ abstract final class CLTheme {
       onPrimary: CLColors.textOnPrimary,
       primaryContainer: CLColors.primaryVariant,
       onPrimaryContainer: CLColors.textOnPrimary,
-      secondary: CLColors.textSecondary,
+      secondary: CLColors.olive,
       onSecondary: CLColors.textOnPrimary,
       secondaryContainer: CLColors.surfaceElevated,
       onSecondaryContainer: CLColors.textPrimary,
-      tertiary: CLColors.available,
+      tertiary: CLColors.terracotta,
       onTertiary: CLColors.textOnPrimary,
       error: CLColors.destructive,
       onError: CLColors.textOnPrimary,
@@ -46,7 +46,7 @@ abstract final class CLTheme {
       textTheme: TextTheme(
         displayLarge: CLTypography.displayLarge,
         displayMedium: CLTypography.displayMedium,
-        displaySmall: CLTypography.headline,
+        displaySmall: CLTypography.displaySmall,
         headlineLarge: CLTypography.headline,
         headlineMedium: CLTypography.headline,
         headlineSmall: CLTypography.title,
@@ -58,7 +58,7 @@ abstract final class CLTheme {
         bodySmall: CLTypography.caption,
         labelLarge: CLTypography.label,
         labelMedium: CLTypography.caption,
-        labelSmall: CLTypography.caption,
+        labelSmall: CLTypography.eyebrow,
       ),
 
       // ── AppBar ──────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ abstract final class CLTheme {
       // ── Cards ────────────────────────────────────────────────────────────
       cardTheme: CardThemeData(
         color: CLColors.surface,
-        elevation: 1,
+        elevation: 0,
         shadowColor: Colors.black.withValues(alpha: 0.06),
         shape: const RoundedRectangleBorder(borderRadius: CLRadius.lgAll),
         margin: EdgeInsets.zero,
@@ -170,7 +170,7 @@ abstract final class CLTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: CLColors.surface,
         elevation: 4,
-        shadowColor: Colors.black.withValues(alpha: 0.12),
+        shadowColor: Colors.black.withValues(alpha: 0.10),
         shape: const RoundedRectangleBorder(borderRadius: CLRadius.lgAll),
         titleTextStyle: CLTypography.headline,
         contentTextStyle: CLTypography.body,
@@ -184,7 +184,7 @@ abstract final class CLTheme {
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: CLColors.surface,
         modalBackgroundColor: CLColors.surface,
-        elevation: 8,
+        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: CLRadius.xlTop),
         showDragHandle: false,
         clipBehavior: Clip.antiAlias,
@@ -193,14 +193,14 @@ abstract final class CLTheme {
       // ── Divider ──────────────────────────────────────────────────────────
       dividerTheme: const DividerThemeData(
         color: CLColors.divider,
-        thickness: 1,
+        thickness: 0.5,
         space: 1,
       ),
 
       // ── Chips ────────────────────────────────────────────────────────────
       chipTheme: ChipThemeData(
         backgroundColor: CLColors.inputFill,
-        selectedColor: CLColors.primary,
+        selectedColor: CLColors.olive.withValues(alpha: 0.12),
         labelStyle: CLTypography.caption,
         padding: const EdgeInsets.symmetric(
           horizontal: CLSpacing.md,
@@ -222,24 +222,24 @@ abstract final class CLTheme {
         shape: const RoundedRectangleBorder(borderRadius: CLRadius.smAll),
       ),
 
-      // ── Navigation Bar ───────────────────────────────────────────────────
+      // ── Navigation Bar — kept for Material fallback, CLBottomNavigation is custom ──
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: CLColors.surface,
-        indicatorColor: CLColors.primary.withValues(alpha: 0.1),
+        backgroundColor: CLColors.softWhite,
+        indicatorColor: CLColors.olive.withValues(alpha: 0.12),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return CLTypography.caption.copyWith(
-              color: CLColors.primary,
+              color: CLColors.olive,
               fontWeight: FontWeight.w600,
             );
           }
-          return CLTypography.caption.copyWith(color: CLColors.textSecondary);
+          return CLTypography.caption.copyWith(color: CLColors.textMuted);
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: CLColors.primary, size: 22);
+            return const IconThemeData(color: CLColors.olive, size: 22);
           }
-          return const IconThemeData(color: CLColors.textSecondary, size: 22);
+          return const IconThemeData(color: CLColors.textMuted, size: 22);
         }),
         elevation: 0,
         shadowColor: Colors.transparent,
@@ -253,7 +253,7 @@ abstract final class CLTheme {
         ),
         shape: const RoundedRectangleBorder(borderRadius: CLRadius.smAll),
         behavior: SnackBarBehavior.floating,
-        elevation: 4,
+        elevation: 0,
       ),
 
       // ── Icon ─────────────────────────────────────────────────────────────

@@ -3,22 +3,22 @@ import 'package:flutter/material.dart';
 /// Casa Lazzarini motion tokens.
 ///
 /// Prefer [durationNormal] + [curveDefault] for most transitions.
-/// Reserve [curveSpring] for delightful micro-interactions only.
+/// Use [durationSlow] + [curveEntrance] for hero/section entrances.
 abstract final class CLMotion {
   // ── Durations ─────────────────────────────────────────────────────────────
 
-  /// 150ms — instant feedback: icon swaps, state toggles.
-  static const Duration durationFast = Duration(milliseconds: 150);
+  /// 160ms — instant feedback: icon swaps, press states, toggles.
+  static const Duration durationFast = Duration(milliseconds: 160);
 
-  /// 250ms — standard transitions: page fades, reveal animations.
-  static const Duration durationNormal = Duration(milliseconds: 250);
+  /// 260ms — standard transitions: fades, reveals, card state changes.
+  static const Duration durationNormal = Duration(milliseconds: 260);
 
-  /// 400ms — deliberate transitions: complex layouts, bottom sheets.
-  static const Duration durationSlow = Duration(milliseconds: 400);
+  /// 420ms — deliberate transitions: hero entrance, complex layout reveals.
+  static const Duration durationSlow = Duration(milliseconds: 420);
 
   // ── Curves ────────────────────────────────────────────────────────────────
 
-  /// Smooth in-out — the default for most transitions.
+  /// Smooth in-out — default for most transitions.
   static const Curve curveDefault = Curves.easeInOut;
 
   /// Decelerates to rest — entering elements (slide-in, fade-in).

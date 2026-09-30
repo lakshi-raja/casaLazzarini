@@ -1,178 +1,244 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/cl_colors.dart';
+import '../../../core/theme/cl_motion.dart';
 import '../../../core/theme/cl_spacing.dart';
 import '../../../core/theme/cl_typography.dart';
 import '../../../features/auth/domain/auth_providers.dart';
+import '../../../shared/models/profile.dart';
+import '../../../shared/widgets/cl_action_card.dart';
+import '../../../shared/widgets/cl_bottom_navigation.dart';
+import '../../../shared/widgets/cl_hero_section.dart';
+import '../../../shared/widgets/cl_section_header.dart';
+import '../../../shared/widgets/cl_suite_preview_card.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entranceCtrl;
+  late final Animation<double> _fadeAnim;
+  late final Animation<Offset> _slideAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _entranceCtrl = AnimationController(
+      vsync: this,
+      duration: CLMotion.durationSlow,
+    )..forward();
+
+    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _entranceCtrl, curve: CLMotion.curveEntrance),
+    );
+
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.035), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _entranceCtrl, curve: CLMotion.curveEntrance),
+        );
+  }
+
+  @override
+  void dispose() {
+    _entranceCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final profile = ref.watch(appAuthProvider).profile;
-    final name = profile?.fullName ?? '';
 
     return Scaffold(
+      extendBody: true,
       backgroundColor: CLColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: CLSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: CLSpacing.xxxl),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // A. Hero — full-width, extends under status bar
+            const CLHeroSection(),
 
-              // ── Greeting ─────────────────────────────────────────────────
-              Text(
-                'Benvenut*\na Casa Lazzarini',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w600,
-                  color: CLColors.textPrimary,
-                  letterSpacing: -0.5,
-                  height: 1.15,
-                ),
-              ),
+            // B–F. Animated content below hero
+            FadeTransition(
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: CLSpacing.xl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: CLSpacing.xxl),
 
-              if (name.isNotEmpty) ...[
-                const SizedBox(height: CLSpacing.sm),
-                Text(
-                  name,
-                  style: CLTypography.body.copyWith(
-                    color: CLColors.textSecondary,
-                  ),
-                ),
-              ],
+                      // B. Welcome
+                      _WelcomeSection(profile: profile),
 
-              const SizedBox(height: CLSpacing.huge),
+                      const SizedBox(height: CLSpacing.xxxl),
 
-              // ── Primary actions ───────────────────────────────────────────
-              _ActionTile(
-                label: 'Prenota',
-                description: 'Scegli una suite e una data disponibile.',
-                icon: Icons.calendar_today_outlined,
-                onTap: null, // Phase 2
-              ),
+                      // C. Primary CTA — Prenota
+                      const CLActionCard(
+                        label: 'Prenota una suite',
+                        icon: Icons.calendar_month_outlined,
+                        variant: CLActionCardVariant.primary,
+                        onTap: null, // Phase 2
+                      ),
 
-              const SizedBox(height: CLSpacing.base),
+                      const SizedBox(height: CLSpacing.md),
 
-              _ActionTile(
-                label: 'Le mie prenotazioni',
-                description:
-                    'Visualizza, modifica o cancella le tue prenotazioni.',
-                icon: Icons.bookmark_outline_rounded,
-                onTap: null, // Phase 3
-              ),
+                      // D. Secondary CTA — Le mie prenotazioni
+                      const CLActionCard(
+                        label: 'Le mie prenotazioni',
+                        icon: Icons.bookmark_outline_rounded,
+                        variant: CLActionCardVariant.secondary,
+                        onTap: null, // Phase 3
+                      ),
 
-              const Spacer(),
+                      const SizedBox(height: CLSpacing.xxxl),
 
-              // ── Sign out ──────────────────────────────────────────────────
-              TextButton(
-                onPressed: () => ref.read(appAuthProvider.notifier).signOut(),
-                child: Text(
-                  'Esci',
-                  style: CLTypography.label.copyWith(
-                    color: CLColors.textSecondary,
+                      // E. Availability — placeholder, no invented data
+                      _AvailabilitySection(),
+
+                      const SizedBox(height: CLSpacing.xxxl),
+
+                      // F. Suites — real names only, no invented metadata
+                      const _SuitesSection(),
+
+                      // Bottom safe area for nav bar
+                      const SizedBox(height: 100),
+                    ],
                   ),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: const CLBottomNavigation(currentIndex: 0),
+    );
+  }
+}
 
-              const SizedBox(height: CLSpacing.base),
-            ],
+// ── B. Welcome ────────────────────────────────────────────────────────────────
+
+class _WelcomeSection extends StatelessWidget {
+  const _WelcomeSection({this.profile});
+
+  final Profile? profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = profile?.fullName ?? '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Benvenut*\na Casa Lazzarini', style: CLTypography.displayMedium),
+        const SizedBox(height: CLSpacing.md),
+        Text(
+          'Un soggiorno pensato per rallentare.',
+          style: CLTypography.body.copyWith(
+            color: CLColors.textSecondary,
+            height: 1.6,
           ),
         ),
+        if (name.isNotEmpty) ...[
+          const SizedBox(height: CLSpacing.sm),
+          Text(
+            name,
+            style: CLTypography.caption.copyWith(color: CLColors.textMuted),
+          ),
+        ],
+        const SizedBox(height: CLSpacing.base),
+        _SignOutLink(),
+      ],
+    );
+  }
+}
+
+class _SignOutLink extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      onTap: () => ref.read(appAuthProvider.notifier).signOut(),
+      child: Text(
+        'Esci',
+        style: CLTypography.caption.copyWith(color: CLColors.textMuted),
       ),
     );
   }
 }
 
-class _ActionTile extends StatefulWidget {
-  const _ActionTile({
-    required this.label,
-    required this.description,
-    required this.icon,
-    required this.onTap,
-  });
+// ── E. Availability placeholder ───────────────────────────────────────────────
 
-  final String label;
-  final String description;
-  final IconData icon;
-  final VoidCallback? onTap;
-
+class _AvailabilitySection extends StatelessWidget {
   @override
-  State<_ActionTile> createState() => _ActionTileState();
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CLSectionHeader(
+          title: 'Disponibilità',
+          actionLabel: 'Vedi calendario',
+          onAction: null, // Phase 2
+        ),
+        const SizedBox(height: CLSpacing.base),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: CLSpacing.xl,
+            vertical: CLSpacing.lg,
+          ),
+          decoration: BoxDecoration(
+            color: CLColors.surface,
+            borderRadius: const BorderRadius.all(Radius.circular(20)),
+            border: Border.all(color: CLColors.divider, width: 0.5),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 17,
+                color: CLColors.textMuted,
+              ),
+              const SizedBox(width: CLSpacing.md),
+              Expanded(
+                child: Text(
+                  'Disponibilità presto disponibile',
+                  style: CLTypography.body.copyWith(color: CLColors.textMuted),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _ActionTileState extends State<_ActionTile> {
-  bool _pressed = false;
+// ── F. Suites ─────────────────────────────────────────────────────────────────
+
+class _SuitesSection extends StatelessWidget {
+  const _SuitesSection();
+
+  static const _suiteNames = ['Suite n.1', 'Suite n.2', 'Suite n.3'];
 
   @override
   Widget build(BuildContext context) {
-    final isDisabled = widget.onTap == null;
-
-    return GestureDetector(
-      onTapDown: isDisabled ? null : (_) => setState(() => _pressed = true),
-      onTapUp: isDisabled ? null : (_) => setState(() => _pressed = false),
-      onTapCancel: isDisabled ? null : () => setState(() => _pressed = false),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _pressed ? 0.975 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: AnimatedOpacity(
-          opacity: isDisabled ? 0.5 : 1.0,
-          duration: const Duration(milliseconds: 150),
-          child: Container(
-            padding: const EdgeInsets.all(CLSpacing.xl),
-            decoration: BoxDecoration(
-              color: CLColors.surface,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: CLColors.background,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    widget.icon,
-                    size: 20,
-                    color: CLColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(width: CLSpacing.base),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(widget.label, style: CLTypography.label),
-                      const SizedBox(height: 2),
-                      Text(widget.description, style: CLTypography.caption),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: CLColors.textMuted,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const CLSectionHeader(title: 'Le suite'),
+        const SizedBox(height: CLSpacing.base),
+        for (int i = 0; i < _suiteNames.length; i++) ...[
+          CLSuitePreviewCard(name: _suiteNames[i], onTap: null),
+          if (i < _suiteNames.length - 1) const SizedBox(height: CLSpacing.md),
+        ],
+      ],
     );
   }
 }
