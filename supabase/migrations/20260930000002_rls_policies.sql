@@ -127,3 +127,22 @@ CREATE POLICY "bookings_select_admin" ON public.bookings
 DROP POLICY IF EXISTS "bookings_update_admin" ON public.bookings;
 CREATE POLICY "bookings_update_admin" ON public.bookings
   FOR UPDATE USING (is_super_admin());
+
+-- =============================================================================
+-- Schema usage and table privileges for the authenticated role
+--
+-- RLS controls row visibility; these GRANTs allow the role to reach the tables
+-- in the first place. Without GRANT USAGE ON SCHEMA the client receives a
+-- "permission denied for schema public" error even when RLS would allow the row.
+-- RLS policies remain the security boundary — these grants are additive only.
+-- =============================================================================
+
+GRANT USAGE ON SCHEMA public TO authenticated;
+
+GRANT SELECT                       ON TABLE public.profiles TO authenticated;
+GRANT SELECT                       ON TABLE public.suites   TO authenticated;
+GRANT SELECT, INSERT, UPDATE       ON TABLE public.bookings TO authenticated;
+
+GRANT INSERT, UPDATE, DELETE       ON TABLE public.profiles TO authenticated;
+GRANT INSERT, UPDATE, DELETE       ON TABLE public.suites   TO authenticated;
+GRANT DELETE                       ON TABLE public.bookings TO authenticated;
