@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/cl_colors.dart';
 import '../../../core/theme/cl_motion.dart';
 import '../../../core/theme/cl_spacing.dart';
@@ -82,21 +84,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       const SizedBox(height: CLSpacing.xxxl),
 
                       // C. Primary CTA — Prenota
-                      const CLActionCard(
+                      CLActionCard(
                         label: 'Prenota una suite',
                         icon: Icons.calendar_month_outlined,
                         variant: CLActionCardVariant.primary,
-                        onTap: null, // Phase 2
+                        onTap: () => context.go(AppRoutes.booking),
                       ),
 
                       const SizedBox(height: CLSpacing.md),
 
                       // D. Secondary CTA — Le mie prenotazioni
-                      const CLActionCard(
+                      CLActionCard(
                         label: 'Le mie prenotazioni',
                         icon: Icons.bookmark_outline_rounded,
                         variant: CLActionCardVariant.secondary,
-                        onTap: null, // Phase 3
+                        onTap: () => context.go(AppRoutes.myBookings),
                       ),
 
                       const SizedBox(height: CLSpacing.xxxl),
@@ -185,7 +187,7 @@ class _AvailabilitySection extends StatelessWidget {
         CLSectionHeader(
           title: 'Disponibilità',
           actionLabel: 'Vedi calendario',
-          onAction: null, // Phase 2
+          onAction: () => context.go(AppRoutes.booking),
         ),
         const SizedBox(height: CLSpacing.base),
         Container(
