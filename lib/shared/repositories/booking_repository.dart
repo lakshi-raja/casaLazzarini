@@ -3,12 +3,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/errors/app_exceptions.dart';
 import '../models/booking.dart';
 import '../models/booking_type.dart';
+import '../../features/bookings/domain/i_booking_repository.dart';
 
-class BookingRepository {
+class BookingRepository implements IBookingRepository {
   const BookingRepository(this._client);
 
   final SupabaseClient _client;
 
+  // Used by admin (fetches all ACTIVE bookings regardless of owner).
   Future<List<Booking>> fetchActiveBookings({
     DateTime? from,
     DateTime? to,
@@ -26,7 +28,10 @@ class BookingRepository {
     }
   }
 
-  Future<List<Booking>> fetchMyBookings(String userId) async {
+  @override
+  Future<List<Booking>> getMyBookings() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw const AuthenticationException('Non autenticato.');
     try {
       final data = await _client
           .from('bookings')
@@ -41,12 +46,64 @@ class BookingRepository {
     }
   }
 
+  @override
+  Future<List<DateTime>> getUnavailableDates(String suiteId) async {
+    try {
+      final data = await _client
+          .from('bookings')
+          .select('booking_date, booking_type')
+          .eq('suite_id', suiteId)
+          .eq('status', 'ACTIVE');
+      final byDate = <String, Set<String>>{};
+      for (final m in data) {
+        final d = m['booking_date'] as String;
+        byDate.putIfAbsent(d, Set.new).add(m['booking_type'] as String);
+      }
+      final totalTypes = BookingType.values.length;
+      return [
+        for (final e in byDate.entries)
+          if (e.value.length >= totalTypes) DateTime.parse(e.key),
+      ];
+    } on PostgrestException catch (e) {
+      throw NetworkException(
+        'Errore nel caricamento disponibilità: ${e.message}',
+      );
+    }
+  }
+
+  @override
+  Future<List<BookingType>> getBookedTypesForDate(
+    String suiteId,
+    DateTime date,
+  ) async {
+    try {
+      final data = await _client
+          .from('bookings')
+          .select('booking_type')
+          .eq('suite_id', suiteId)
+          .eq('booking_date', _fmt(date))
+          .eq('status', 'ACTIVE');
+      return [
+        for (final m in data)
+          BookingType.values.firstWhere(
+            (t) => t.toDatabaseString() == m['booking_type'],
+          ),
+      ];
+    } on PostgrestException catch (e) {
+      throw NetworkException(
+        'Errore nel caricamento prenotazioni: ${e.message}',
+      );
+    }
+  }
+
+  @override
   Future<Booking> createBooking({
-    required String userId,
     required String suiteId,
     required DateTime date,
     required BookingType type,
   }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw const AuthenticationException('Non autenticato.');
     try {
       final data = await _client
           .from('bookings')
@@ -72,6 +129,7 @@ class BookingRepository {
     }
   }
 
+  @override
   Future<void> cancelBooking(String bookingId) async {
     try {
       await _client

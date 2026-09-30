@@ -9,18 +9,25 @@ import '../../../shared/models/booking.dart';
 import '../../../shared/models/booking_type.dart';
 import '../../../shared/models/suite.dart';
 import '../../../shared/repositories/booking_repository.dart';
+import '../../../shared/repositories/i_suite_repository.dart';
 import '../../../shared/repositories/suite_repository.dart';
+import 'i_booking_repository.dart';
 
-final suiteRepositoryProvider = Provider<SuiteRepository>((ref) {
+final suiteRepositoryProvider = Provider<ISuiteRepository>((ref) {
   return SuiteRepository(Supabase.instance.client);
 });
 
-final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
+// Concrete provider used internally where admin methods are needed.
+final _bookingRepositoryConcreteProvider = Provider<BookingRepository>((ref) {
   return BookingRepository(Supabase.instance.client);
 });
 
+final bookingRepositoryProvider = Provider<IBookingRepository>((ref) {
+  return ref.watch(_bookingRepositoryConcreteProvider);
+});
+
 final suitesProvider = FutureProvider<List<Suite>>((ref) {
-  return ref.read(suiteRepositoryProvider).fetchActive();
+  return ref.read(suiteRepositoryProvider).getActiveSuites();
 });
 
 /// The month currently displayed in the booking calendar (first day of month).
@@ -37,7 +44,7 @@ final monthActiveBookingsProvider = FutureProvider.autoDispose<List<Booking>>((
   final from = DateTime(month.year, month.month, 1);
   final to = DateTime(month.year, month.month + 1, 0); // last day of month
   return ref
-      .read(bookingRepositoryProvider)
+      .read(_bookingRepositoryConcreteProvider)
       .fetchActiveBookings(from: from, to: to);
 });
 
@@ -47,7 +54,7 @@ final myBookingsProvider = FutureProvider.autoDispose<List<Booking>>((
 ) async {
   final auth = ref.watch(appAuthProvider);
   if (!auth.isAuthenticated || auth.profile == null) return [];
-  return ref.read(bookingRepositoryProvider).fetchMyBookings(auth.profile!.id);
+  return ref.read(bookingRepositoryProvider).getMyBookings();
 });
 
 /// Handles booking creation and cancellation.
@@ -68,12 +75,7 @@ class BookingActionsNotifier extends AsyncNotifier<void> {
     try {
       final booking = await ref
           .read(bookingRepositoryProvider)
-          .createBooking(
-            userId: auth.profile!.id,
-            suiteId: suiteId,
-            date: date,
-            type: type,
-          );
+          .createBooking(suiteId: suiteId, date: date, type: type);
       state = const AsyncData(null);
       ref.invalidate(monthActiveBookingsProvider);
       ref.invalidate(myBookingsProvider);
