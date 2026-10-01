@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_exceptions.dart';
+import '../../../core/routing/navigation_utils.dart';
 import '../../../core/theme/cl_colors.dart';
 import '../../../core/theme/cl_radius.dart';
 import '../../../core/theme/cl_spacing.dart';
@@ -23,54 +23,62 @@ class BookingCalendarScreen extends ConsumerWidget {
     final bookingsAsync = ref.watch(monthActiveBookingsProvider);
     final suitesAsync = ref.watch(suitesProvider);
 
-    return Scaffold(
-      backgroundColor: CLColors.background,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, _) {
+        if (!didPop) goBackOrHome(context);
+      },
+      child: Scaffold(
         backgroundColor: CLColors.background,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-          color: CLColors.textPrimary,
-          onPressed: () => context.pop(),
+        appBar: AppBar(
+          backgroundColor: CLColors.background,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+            color: CLColors.textPrimary,
+            onPressed: () => goBackOrHome(context),
+          ),
+          title: Text('Prenota', style: CLTypography.label),
+          centerTitle: true,
         ),
-        title: Text('Prenota', style: CLTypography.label),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _MonthHeader(month: month),
-            const _WeekdayLabels(),
-            const SizedBox(height: CLSpacing.xs),
-            Expanded(
-              child: bookingsAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator.adaptive()),
-                error: (e, _) => _ErrorBody(
-                  message: e is AppException
-                      ? e.message
-                      : 'Errore nel caricamento disponibilità.',
-                ),
-                data: (bookings) => suitesAsync.when(
+        body: SafeArea(
+          child: Column(
+            children: [
+              _MonthHeader(month: month),
+              const _WeekdayLabels(),
+              const SizedBox(height: CLSpacing.xs),
+              Expanded(
+                child: bookingsAsync.when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator.adaptive()),
                   error: (e, _) => _ErrorBody(
                     message: e is AppException
                         ? e.message
-                        : 'Errore nel caricamento suite.',
+                        : 'Errore nel caricamento disponibilità.',
                   ),
-                  data: (suites) => _CalendarGrid(
-                    month: month,
-                    bookings: bookings,
-                    suites: suites,
-                    onDayTap: (date) =>
-                        _showBookingSheet(context, date, suites, bookings),
+                  data: (bookings) => suitesAsync.when(
+                    loading: () => const Center(
+                      child: CircularProgressIndicator.adaptive(),
+                    ),
+                    error: (e, _) => _ErrorBody(
+                      message: e is AppException
+                          ? e.message
+                          : 'Errore nel caricamento suite.',
+                    ),
+                    data: (suites) => _CalendarGrid(
+                      month: month,
+                      bookings: bookings,
+                      suites: suites,
+                      onDayTap: (date) =>
+                          _showBookingSheet(context, date, suites, bookings),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+              const _CalendarLegend(),
+            ],
+          ),
         ),
       ),
     );
@@ -223,18 +231,25 @@ class _CalendarGrid extends StatelessWidget {
             final date = DateTime(month.year, month.month, day);
             final isPast = date.isBefore(todayNorm);
             final isToday = date == todayNorm;
-            final avail = isPast
+
+            // Per-suite availability derived from already-loaded monthly data —
+            // no extra queries.
+            final suiteAvails = isPast
                 ? null
-                : computeDateAvailability(bookings, date, suites.length);
+                : [
+                    for (final s in suites)
+                      computeSuiteAvailability(bookings, date, s.id),
+                  ];
+            final allUnavailable =
+                suiteAvails == null ||
+                suiteAvails.every((a) => a == DateAvailability.unavailable);
 
             return _DayCell(
               day: day,
               isPast: isPast,
               isToday: isToday,
-              availability: avail,
-              onTap: isPast || avail == DateAvailability.unavailable
-                  ? null
-                  : () => onDayTap(date),
+              suiteAvailabilities: suiteAvails,
+              onTap: allUnavailable ? null : () => onDayTap(date),
             );
           },
         ),
@@ -246,7 +261,7 @@ class _CalendarGrid extends StatelessWidget {
         horizontal: CLSpacing.base,
         vertical: CLSpacing.xs,
       ),
-      childAspectRatio: 0.95,
+      childAspectRatio: 0.9,
       children: cells,
     );
   }
@@ -259,19 +274,20 @@ class _DayCell extends StatelessWidget {
     required this.day,
     required this.isPast,
     required this.isToday,
-    required this.availability,
+    required this.suiteAvailabilities,
     required this.onTap,
   });
 
   final int day;
   final bool isPast;
   final bool isToday;
-  final DateAvailability? availability;
+
+  /// One entry per suite in canonical (code) order. Null for past days.
+  final List<DateAvailability>? suiteAvailabilities;
   final VoidCallback? onTap;
 
-  Color get _dotColor {
-    if (isPast || availability == null) return Colors.transparent;
-    switch (availability!) {
+  Color _indicatorColor(DateAvailability avail) {
+    switch (avail) {
       case DateAvailability.available:
         return CLColors.available;
       case DateAvailability.partial:
@@ -295,7 +311,12 @@ class _DayCell extends StatelessWidget {
           decoration: BoxDecoration(
             color: isToday ? CLColors.surfaceElevated : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
-            border: isToday ? Border.all(color: CLColors.divider) : null,
+            border: isToday
+                ? Border.all(color: CLColors.divider, width: 1.0)
+                : Border.all(
+                    color: CLColors.divider.withValues(alpha: 0.7),
+                    width: 0.75,
+                  ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -310,18 +331,89 @@ class _DayCell extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 3),
-              Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: _dotColor,
-                  shape: BoxShape.circle,
+              if (suiteAvailabilities != null)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (int i = 0; i < suiteAvailabilities!.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 2),
+                      Container(
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: isPast
+                              ? Colors.transparent
+                              : _indicatorColor(suiteAvailabilities![i]),
+                          borderRadius: BorderRadius.circular(1.5),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Calendar legend ────────────────────────────────────────────────────────
+
+class _CalendarLegend extends StatelessWidget {
+  const _CalendarLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: CLSpacing.xl,
+        vertical: CLSpacing.base,
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Suite 1 · 2 · 3',
+            style: CLTypography.caption.copyWith(color: CLColors.textMuted),
+          ),
+          const Spacer(),
+          _LegendItem(color: CLColors.available, label: 'Libera'),
+          const SizedBox(width: CLSpacing.base),
+          _LegendItem(color: CLColors.partiallyAvailable, label: 'Parziale'),
+          const SizedBox(width: CLSpacing.base),
+          _LegendItem(color: CLColors.unavailable, label: 'Occupata'),
+        ],
+      ),
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  const _LegendItem({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: CLTypography.caption.copyWith(color: CLColors.textMuted),
+        ),
+      ],
     );
   }
 }
@@ -372,6 +464,17 @@ class _BookingSheetState extends ConsumerState<_BookingSheet> {
   Widget build(BuildContext context) {
     final isLoading = ref.watch(bookingActionsProvider).isLoading;
 
+    // Derive per-suite availability from the already-loaded active bookings —
+    // same source used by the day-cell indicators, no extra queries.
+    final suiteAvailMap = {
+      for (final s in widget.suites)
+        s.id: computeSuiteAvailability(
+          widget.activeBookings,
+          widget.date,
+          s.id,
+        ),
+    };
+
     return Padding(
       padding: EdgeInsets.only(
         left: CLSpacing.xl,
@@ -399,7 +502,7 @@ class _BookingSheetState extends ConsumerState<_BookingSheet> {
           Text(_dateLabel, style: CLTypography.headline),
           const SizedBox(height: CLSpacing.xl),
 
-          // Suite selection
+          // Suite selection — each chip reflects suite availability visually.
           Text('Suite', style: CLTypography.label),
           const SizedBox(height: CLSpacing.sm),
           Wrap(
@@ -410,11 +513,14 @@ class _BookingSheetState extends ConsumerState<_BookingSheet> {
                 _Chip(
                   label: s.displayName,
                   selected: _suite?.id == s.id,
-                  onTap: () => setState(() {
-                    _suite = s;
-                    _type = null;
-                    _errorMessage = null;
-                  }),
+                  availability: suiteAvailMap[s.id],
+                  onTap: suiteAvailMap[s.id] != DateAvailability.unavailable
+                      ? () => setState(() {
+                          _suite = s;
+                          _type = null;
+                          _errorMessage = null;
+                        })
+                      : null,
                 ),
             ],
           ),
@@ -534,13 +640,59 @@ class _Chip extends StatelessWidget {
     required this.label,
     required this.selected,
     this.enabled = true,
+    this.availability,
     this.onTap,
   });
 
   final String label;
   final bool selected;
+
+  /// Used by type-chips: true = slot free, false = slot taken.
   final bool enabled;
+
+  /// Used by suite-chips: drives background, border, and text color.
+  /// Null = fall back to [enabled] logic (type-chip behavior).
+  final DateAvailability? availability;
   final VoidCallback? onTap;
+
+  Color get _bgColor {
+    if (selected) return CLColors.primary;
+    switch (availability) {
+      case DateAvailability.unavailable:
+        return CLColors.unavailable.withValues(alpha: 0.10);
+      case DateAvailability.partial:
+        return CLColors.partiallyAvailable.withValues(alpha: 0.08);
+      case DateAvailability.available:
+      case null:
+        return enabled ? CLColors.surfaceElevated : CLColors.inputFill;
+    }
+  }
+
+  Color get _borderColor {
+    if (selected) return CLColors.primary;
+    switch (availability) {
+      case DateAvailability.unavailable:
+        return CLColors.unavailable.withValues(alpha: 0.45);
+      case DateAvailability.partial:
+        return CLColors.partiallyAvailable.withValues(alpha: 0.40);
+      case DateAvailability.available:
+      case null:
+        return CLColors.divider;
+    }
+  }
+
+  Color get _labelColor {
+    if (selected) return CLColors.textOnPrimary;
+    switch (availability) {
+      case DateAvailability.unavailable:
+        return CLColors.unavailable;
+      case DateAvailability.partial:
+        return CLColors.partiallyAvailable;
+      case DateAvailability.available:
+      case null:
+        return enabled ? CLColors.textPrimary : CLColors.textMuted;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -553,20 +705,14 @@ class _Chip extends StatelessWidget {
           vertical: CLSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: selected
-              ? CLColors.primary
-              : (enabled ? CLColors.surfaceElevated : CLColors.inputFill),
+          color: _bgColor,
           borderRadius: const BorderRadius.all(CLRadius.full),
-          border: Border.all(
-            color: selected ? CLColors.primary : CLColors.divider,
-          ),
+          border: Border.all(color: _borderColor),
         ),
         child: Text(
           label,
           style: CLTypography.caption.copyWith(
-            color: selected
-                ? CLColors.textOnPrimary
-                : (enabled ? CLColors.textPrimary : CLColors.textMuted),
+            color: _labelColor,
             fontWeight: FontWeight.w500,
           ),
         ),

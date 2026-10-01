@@ -11,6 +11,9 @@ import '../../../core/theme/cl_typography.dart';
 import '../../../features/auth/domain/auth_providers.dart';
 import '../../../shared/models/user_role.dart';
 import '../../../shared/widgets/cl_bottom_navigation.dart';
+import '../../../shared/widgets/cl_dialog.dart';
+import '../../../shared/widgets/cl_primary_button.dart';
+import '../../../shared/widgets/cl_secondary_button.dart';
 import '../../../shared/widgets/cl_section_header.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -142,7 +145,26 @@ class _SignOutTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => ref.read(appAuthProvider.notifier).signOut(),
+      onTap: () async {
+        final confirmed = await CLDialog.show<bool>(
+          context: context,
+          title: 'Esci',
+          content: const Text('Sei sicuro di voler uscire?'),
+          actions: [
+            CLSecondaryButton(
+              label: 'Annulla',
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            CLPrimaryButton(
+              label: 'Esci',
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+        if (confirmed != true) return;
+        if (!context.mounted) return;
+        ref.read(appAuthProvider.notifier).signOut();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: CLSpacing.xl,

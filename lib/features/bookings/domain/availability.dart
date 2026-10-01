@@ -34,5 +34,18 @@ Map<BookingType, bool> computeSuiteTypeAvailability(
   return {for (final t in BookingType.values) t: !taken.contains(t)};
 }
 
+/// Collapses per-type availability into a single state for one suite on [date].
+DateAvailability computeSuiteAvailability(
+  List<Booking> activeBookings,
+  DateTime date,
+  String suiteId,
+) {
+  final typeAvail = computeSuiteTypeAvailability(activeBookings, date, suiteId);
+  final freeCount = typeAvail.values.where((v) => v).length;
+  if (freeCount == 0) return DateAvailability.unavailable;
+  if (freeCount == typeAvail.length) return DateAvailability.available;
+  return DateAvailability.partial;
+}
+
 bool _sameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_exceptions.dart';
+import '../../../core/routing/navigation_utils.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/cl_colors.dart';
 import '../../../core/theme/cl_radius.dart';
@@ -23,47 +24,55 @@ class MyBookingsScreen extends ConsumerWidget {
     final myBookingsAsync = ref.watch(myBookingsProvider);
     final suitesAsync = ref.watch(suitesProvider);
 
-    return Scaffold(
-      backgroundColor: CLColors.background,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, _) {
+        if (!didPop) goBackOrHome(context);
+      },
+      child: Scaffold(
         backgroundColor: CLColors.background,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-          color: CLColors.textPrimary,
-          onPressed: () => context.pop(),
-        ),
-        title: Text('Le mie prenotazioni', style: CLTypography.label),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: myBookingsAsync.when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator.adaptive()),
-          error: (e, _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(CLSpacing.xl),
-              child: Text(
-                e is AppException ? e.message : 'Errore nel caricamento.',
-                style: CLTypography.body.copyWith(color: CLColors.destructive),
-                textAlign: TextAlign.center,
-              ),
-            ),
+        appBar: AppBar(
+          backgroundColor: CLColors.background,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+            color: CLColors.textPrimary,
+            onPressed: () => goBackOrHome(context),
           ),
-          data: (bookings) => suitesAsync.when(
+          title: Text('Le mie prenotazioni', style: CLTypography.label),
+          centerTitle: true,
+        ),
+        body: SafeArea(
+          child: myBookingsAsync.when(
             loading: () =>
                 const Center(child: CircularProgressIndicator.adaptive()),
-            error: (_, _) => const SizedBox(),
-            data: (suites) {
-              if (bookings.isEmpty) {
-                return const CLEmptyState(
-                  icon: Icons.bookmark_outline_rounded,
-                  message: 'Nessuna prenotazione ancora.',
-                );
-              }
-              return _BookingList(bookings: bookings, suites: suites);
-            },
+            error: (e, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(CLSpacing.xl),
+                child: Text(
+                  e is AppException ? e.message : 'Errore nel caricamento.',
+                  style: CLTypography.body.copyWith(
+                    color: CLColors.destructive,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            data: (bookings) => suitesAsync.when(
+              loading: () =>
+                  const Center(child: CircularProgressIndicator.adaptive()),
+              error: (_, _) => const SizedBox(),
+              data: (suites) {
+                if (bookings.isEmpty) {
+                  return const CLEmptyState(
+                    icon: Icons.bookmark_outline_rounded,
+                    message: 'Nessuna prenotazione ancora.',
+                  );
+                }
+                return _BookingList(bookings: bookings, suites: suites);
+              },
+            ),
           ),
         ),
       ),

@@ -75,6 +75,59 @@ void main() {
     });
   });
 
+  // ── computeSuiteAvailability ──────────────────────────────────────────────
+
+  group('computeSuiteAvailability', () {
+    test('returns available when no bookings for suite', () {
+      expect(
+        computeSuiteAvailability([], date, suiteA),
+        DateAvailability.available,
+      );
+    });
+
+    test('returns partial when at least one type is taken but not all', () {
+      final bookings = [makeBooking(suiteId: suiteA, type: BookingType.night)];
+      expect(
+        computeSuiteAvailability(bookings, date, suiteA),
+        DateAvailability.partial,
+      );
+    });
+
+    test('returns unavailable when all types are taken', () {
+      final bookings = [
+        for (final t in BookingType.values)
+          makeBooking(suiteId: suiteA, type: t),
+      ];
+      expect(
+        computeSuiteAvailability(bookings, date, suiteA),
+        DateAvailability.unavailable,
+      );
+    });
+
+    test('ignores bookings for a different suite', () {
+      final bookings = [
+        for (final t in BookingType.values)
+          makeBooking(suiteId: suiteB, type: t),
+      ];
+      expect(
+        computeSuiteAvailability(bookings, date, suiteA),
+        DateAvailability.available,
+      );
+    });
+
+    test('ignores bookings on a different date', () {
+      final other = DateTime.utc(2026, 10, 16);
+      final bookings = [
+        for (final t in BookingType.values)
+          makeBooking(suiteId: suiteA, type: t, bookingDate: other),
+      ];
+      expect(
+        computeSuiteAvailability(bookings, date, suiteA),
+        DateAvailability.available,
+      );
+    });
+  });
+
   // ── computeSuiteTypeAvailability ──────────────────────────────────────────
 
   group('computeSuiteTypeAvailability', () {

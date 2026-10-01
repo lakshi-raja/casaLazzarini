@@ -11,7 +11,10 @@ import '../../../features/auth/domain/auth_providers.dart';
 import '../../../shared/models/profile.dart';
 import '../../../shared/widgets/cl_action_card.dart';
 import '../../../shared/widgets/cl_bottom_navigation.dart';
+import '../../../shared/widgets/cl_dialog.dart';
 import '../../../shared/widgets/cl_hero_section.dart';
+import '../../../shared/widgets/cl_primary_button.dart';
+import '../../../shared/widgets/cl_secondary_button.dart';
 import '../../../shared/widgets/cl_section_header.dart';
 import '../../../shared/widgets/cl_suite_preview_card.dart';
 
@@ -88,7 +91,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         label: 'Prenota una suite',
                         icon: Icons.calendar_month_outlined,
                         variant: CLActionCardVariant.primary,
-                        onTap: () => context.go(AppRoutes.booking),
+                        onTap: () => context.push(AppRoutes.booking),
                       ),
 
                       const SizedBox(height: CLSpacing.md),
@@ -98,7 +101,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         label: 'Le mie prenotazioni',
                         icon: Icons.bookmark_outline_rounded,
                         variant: CLActionCardVariant.secondary,
-                        onTap: () => context.go(AppRoutes.myBookings),
+                        onTap: () => context.push(AppRoutes.myBookings),
                       ),
 
                       const SizedBox(height: CLSpacing.xxxl),
@@ -167,7 +170,26 @@ class _SignOutLink extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => ref.read(appAuthProvider.notifier).signOut(),
+      onTap: () async {
+        final confirmed = await CLDialog.show<bool>(
+          context: context,
+          title: 'Esci',
+          content: const Text('Sei sicuro di voler uscire?'),
+          actions: [
+            CLSecondaryButton(
+              label: 'Annulla',
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            CLPrimaryButton(
+              label: 'Esci',
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+        if (confirmed != true) return;
+        if (!context.mounted) return;
+        ref.read(appAuthProvider.notifier).signOut();
+      },
       child: Text(
         'Esci',
         style: CLTypography.caption.copyWith(color: CLColors.textMuted),
@@ -187,7 +209,7 @@ class _AvailabilitySection extends StatelessWidget {
         CLSectionHeader(
           title: 'Disponibilità',
           actionLabel: 'Vedi calendario',
-          onAction: () => context.go(AppRoutes.booking),
+          onAction: () => context.push(AppRoutes.booking),
         ),
         const SizedBox(height: CLSpacing.base),
         Container(

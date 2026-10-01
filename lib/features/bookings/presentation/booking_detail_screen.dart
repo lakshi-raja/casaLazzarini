@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/routing/navigation_utils.dart';
+
 import '../../../core/errors/app_exceptions.dart';
 import '../../../core/theme/cl_colors.dart';
 import '../../../core/theme/cl_radius.dart';
@@ -26,56 +28,64 @@ class BookingDetailScreen extends ConsumerWidget {
     final bookingsAsync = ref.watch(myBookingsProvider);
     final suitesAsync = ref.watch(suitesProvider);
 
-    return Scaffold(
-      backgroundColor: CLColors.background,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, _) {
+        if (!didPop) goBackOrHome(context);
+      },
+      child: Scaffold(
         backgroundColor: CLColors.background,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-          color: CLColors.textPrimary,
-          onPressed: () => Navigator.of(context).pop(),
+        appBar: AppBar(
+          backgroundColor: CLColors.background,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+            color: CLColors.textPrimary,
+            onPressed: () => goBackOrHome(context),
+          ),
+          title: Text('Prenotazione', style: CLTypography.label),
+          centerTitle: true,
         ),
-        title: Text('Prenotazione', style: CLTypography.label),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: bookingsAsync.when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator.adaptive()),
-          error: (e, _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(CLSpacing.xl),
-              child: Text(
-                e is AppException ? e.message : 'Errore nel caricamento.',
-                style: CLTypography.body.copyWith(color: CLColors.destructive),
-                textAlign: TextAlign.center,
+        body: SafeArea(
+          child: bookingsAsync.when(
+            loading: () =>
+                const Center(child: CircularProgressIndicator.adaptive()),
+            error: (e, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(CLSpacing.xl),
+                child: Text(
+                  e is AppException ? e.message : 'Errore nel caricamento.',
+                  style: CLTypography.body.copyWith(
+                    color: CLColors.destructive,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
-          ),
-          data: (bookings) {
-            final booking = bookings
-                .where((b) => b.id == bookingId)
-                .firstOrNull;
-            if (booking == null) {
-              return const CLEmptyState(
-                icon: Icons.search_off_rounded,
-                message: 'Prenotazione non trovata.',
+            data: (bookings) {
+              final booking = bookings
+                  .where((b) => b.id == bookingId)
+                  .firstOrNull;
+              if (booking == null) {
+                return const CLEmptyState(
+                  icon: Icons.search_off_rounded,
+                  message: 'Prenotazione non trovata.',
+                );
+              }
+              return suitesAsync.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator.adaptive()),
+                error: (_, _) => const SizedBox(),
+                data: (suites) {
+                  final suite = suites
+                      .where((s) => s.id == booking.suiteId)
+                      .firstOrNull;
+                  return _DetailBody(booking: booking, suite: suite);
+                },
               );
-            }
-            return suitesAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator.adaptive()),
-              error: (_, _) => const SizedBox(),
-              data: (suites) {
-                final suite = suites
-                    .where((s) => s.id == booking.suiteId)
-                    .firstOrNull;
-                return _DetailBody(booking: booking, suite: suite);
-              },
-            );
-          },
+            },
+          ),
         ),
       ),
     );
