@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
     hide AuthState, AuthChangeEvent;
@@ -65,10 +64,7 @@ class AppAuthNotifier extends StateNotifier<AppAuthState> {
         password: password,
       );
       // State updated by stream listener after sign-in completes
-    } on AuthException catch (e, st) {
-      debugPrint('AUTH LOGIN ERROR: ${e.message}');
-      debugPrint('AUTH LOGIN STATUS: ${e.statusCode}');
-      debugPrintStack(stackTrace: st);
+    } on AuthException catch (e) {
       state = AppAuthState.unauthenticatedWithError(_mapAuthError(e.message));
     } catch (_) {
       state = AppAuthState.unauthenticatedWithError(
