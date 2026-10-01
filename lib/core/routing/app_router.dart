@@ -7,10 +7,13 @@ import '../../features/auth/domain/app_auth_state.dart';
 import '../../features/auth/domain/auth_providers.dart';
 import '../../features/auth/presentation/auth_loading_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/bookings/presentation/booking_calendar_screen.dart';
+import '../../features/bookings/presentation/booking_detail_screen.dart';
+import '../../features/bookings/presentation/my_bookings_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
 import 'app_routes.dart';
 
-/// Bridges Riverpod auth state with go_router's refresh mechanism.
 class _RouterNotifier extends ChangeNotifier {
   final Ref _ref;
 
@@ -22,7 +25,6 @@ class _RouterNotifier extends ChangeNotifier {
     final auth = _ref.read(appAuthProvider);
     final location = state.uri.path;
 
-    // While loading: park at splash — avoids login or home flash
     if (auth.isLoading) {
       return location == AppRoutes.splash ? null : AppRoutes.splash;
     }
@@ -37,7 +39,6 @@ class _RouterNotifier extends ChangeNotifier {
       return AppRoutes.login;
     }
 
-    // Authenticated — leave splash/login
     if (onSplash || onLogin) {
       return auth.isSuperAdmin ? AppRoutes.admin : AppRoutes.home;
     }
@@ -73,6 +74,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.home,
         pageBuilder: (context, state) =>
             const NoTransitionPage(child: HomeScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.booking,
+        pageBuilder: (context, state) =>
+            const NoTransitionPage(child: BookingCalendarScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.myBookings,
+        pageBuilder: (context, state) =>
+            const NoTransitionPage(child: MyBookingsScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.bookingDetail,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['bookingId']!;
+          return NoTransitionPage(child: BookingDetailScreen(bookingId: id));
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.profile,
+        pageBuilder: (context, state) =>
+            const NoTransitionPage(child: ProfileScreen()),
       ),
       GoRoute(
         path: AppRoutes.admin,

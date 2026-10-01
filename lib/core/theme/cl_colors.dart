@@ -2,23 +2,41 @@ import 'package:flutter/material.dart';
 
 /// Casa Lazzarini color tokens.
 ///
-/// Palette direction: warm ivory backgrounds, deep warm charcoal primary,
-/// muted sage/amber/terracotta for availability states — nothing saturated.
+/// Palette direction: Editorial Luxury — ivory backgrounds, warm charcoal,
+/// olive accents, terracotta warmth. Nothing saturated or Material-default.
 abstract final class CLColors {
   // ── Backgrounds ──────────────────────────────────────────────────────────
   /// Main scaffold background — warm ivory.
-  static const Color background = Color(0xFFFAF8F5);
+  static const Color background = Color(0xFFF7F3ED);
 
-  /// Default surface (cards, sheets) — pure white with warm undertone.
-  static const Color surface = Color(0xFFFFFFFF);
+  /// Default surface (cards, sheets) — soft white with warm undertone.
+  static const Color surface = Color(0xFFFFFDFC);
 
   /// Slightly elevated surface — a hair warmer than surface for layering.
-  static const Color surfaceElevated = Color(0xFFF5F2EE);
+  static const Color surfaceElevated = Color(0xFFF0EBE3);
+
+  // ── Brand Palette ─────────────────────────────────────────────────────────
+  /// Ivory — primary background tone.
+  static const Color ivory = Color(0xFFF7F3ED);
+
+  /// Soft White — surface tone.
+  static const Color softWhite = Color(0xFFFFFDFC);
+
+  /// Charcoal — deep warm near-black, primary anchor.
+  static const Color charcoal = Color(0xFF1B1917);
+
+  /// Warm Sand — warm mid-tone accent, decorative use.
+  static const Color warmSand = Color(0xFFD8CBBE);
+
+  /// Olive — primary CTA, selected states, active accents.
+  static const Color olive = Color(0xFF6E7564);
+
+  /// Terracotta — warm highlight, availability indicator.
+  static const Color terracotta = Color(0xFFA7654A);
 
   // ── Primary ───────────────────────────────────────────────────────────────
-  /// Deep warm charcoal — anchors the palette, reads as near-black with
-  /// warmth rather than cold grey.
-  static const Color primary = Color(0xFF1C1917);
+  /// Deep warm charcoal — anchors the palette.
+  static const Color primary = Color(0xFF1B1917);
 
   /// Lighter variant for pressed/focus states on primary.
   static const Color primaryVariant = Color(0xFF3D3835);
@@ -31,10 +49,13 @@ abstract final class CLColors {
   static const Color textSecondary = Color(0xFF6B6560);
 
   /// Light warm grey — placeholders, muted captions.
-  static const Color textMuted = Color(0xFF9B9490);
+  static const Color textMuted = Color(0xFFA49C95);
 
-  /// Text on primary/dark backgrounds — always white.
+  /// Text on primary/dark backgrounds — white.
   static const Color textOnPrimary = Color(0xFFFFFFFF);
+
+  /// Ivory text on dark hero/charcoal backgrounds.
+  static const Color textOnDark = Color(0xFFF7F3ED);
 
   // ── Availability ─────────────────────────────────────────────────────────
   /// Desaturated sage green — available state.
@@ -55,10 +76,10 @@ abstract final class CLColors {
 
   // ── Chrome ───────────────────────────────────────────────────────────────
   /// Very light warm grey — dividers and hairline borders.
-  static const Color divider = Color(0xFFE8E4E0);
+  static const Color divider = Color(0xFFE5DDD5);
 
   /// Subtle warm grey — input fills, surface overlays.
-  static const Color inputFill = Color(0xFFF2EFE9);
+  static const Color inputFill = Color(0xFFEFE9E1);
 
   /// Scrim for dialogs and bottom sheets.
   static const Color scrim = Color(0x80000000);

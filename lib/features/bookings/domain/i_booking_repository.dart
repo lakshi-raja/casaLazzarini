@@ -15,7 +15,10 @@ abstract interface class IBookingRepository {
 
   /// Returns booked [BookingType]s for a specific suite and date,
   /// so the UI can show which slots are still available.
-  Future<List<BookingType>> getBookedTypesForDate(String suiteId, DateTime date);
+  Future<List<BookingType>> getBookedTypesForDate(
+    String suiteId,
+    DateTime date,
+  );
 
   /// Creates a booking. Throws if the slot is already taken (DB enforces uniqueness).
   Future<Booking> createBooking({

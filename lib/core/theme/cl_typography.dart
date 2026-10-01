@@ -5,37 +5,48 @@ import 'cl_colors.dart';
 
 /// Casa Lazzarini typography tokens.
 ///
-/// Playfair Display — editorial display headings only (sparingly).
-/// Inter — all functional UI: buttons, labels, body, navigation.
+/// Playfair Display — editorial display headings (hero, section titles, suite names).
+/// Inter — all functional UI: buttons, labels, body, navigation, metadata.
+///
+/// Scale is intentionally bold — editorial luxury demands strong hierarchy.
 abstract final class CLTypography {
   // ── Display — Playfair Display ────────────────────────────────────────────
 
-  /// Hero headings — section titles, feature copy. 40sp, w600.
+  /// Hero headings — full-screen brand moments. 48sp, w600.
   static TextStyle get displayLarge => GoogleFonts.playfairDisplay(
-    fontSize: 40,
+    fontSize: 48,
     fontWeight: FontWeight.w600,
     color: CLColors.textPrimary,
     letterSpacing: -0.5,
-    height: 1.15,
+    height: 1.1,
   );
 
-  /// Secondary display — modal titles, page headers. 32sp, w600.
+  /// Major section headings, welcome copy. 30sp, w600.
   static TextStyle get displayMedium => GoogleFonts.playfairDisplay(
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: FontWeight.w600,
     color: CLColors.textPrimary,
     letterSpacing: -0.3,
     height: 1.2,
   );
 
-  // ── Functional — Inter ────────────────────────────────────────────────────
-
-  /// Screen headings, prominent section labels. 24sp, w600.
-  static TextStyle get headline => GoogleFonts.inter(
-    fontSize: 24,
-    fontWeight: FontWeight.w600,
+  /// Suite titles, modal headings, card display titles. 22sp, w500.
+  static TextStyle get displaySmall => GoogleFonts.playfairDisplay(
+    fontSize: 22,
+    fontWeight: FontWeight.w500,
     color: CLColors.textPrimary,
     letterSpacing: -0.1,
+    height: 1.25,
+  );
+
+  // ── Functional — Inter ────────────────────────────────────────────────────
+
+  /// Screen headings, prominent section labels. 26sp, w600.
+  static TextStyle get headline => GoogleFonts.inter(
+    fontSize: 26,
+    fontWeight: FontWeight.w600,
+    color: CLColors.textPrimary,
+    letterSpacing: -0.2,
     height: 1.25,
   );
 
@@ -44,7 +55,7 @@ abstract final class CLTypography {
     fontSize: 20,
     fontWeight: FontWeight.w500,
     color: CLColors.textPrimary,
-    letterSpacing: 0.0,
+    letterSpacing: -0.1,
     height: 1.3,
   );
 
@@ -54,7 +65,7 @@ abstract final class CLTypography {
     fontWeight: FontWeight.w400,
     color: CLColors.textPrimary,
     letterSpacing: 0.05,
-    height: 1.5,
+    height: 1.55,
   );
 
   /// Standard body text. 15sp, w400.
@@ -63,7 +74,7 @@ abstract final class CLTypography {
     fontWeight: FontWeight.w400,
     color: CLColors.textPrimary,
     letterSpacing: 0.05,
-    height: 1.5,
+    height: 1.55,
   );
 
   /// Buttons, tags, input labels, emphasized metadata. 14sp, w500.
@@ -81,6 +92,15 @@ abstract final class CLTypography {
     fontWeight: FontWeight.w400,
     color: CLColors.textSecondary,
     letterSpacing: 0.1,
+    height: 1.4,
+  );
+
+  /// Eyebrow labels — uppercase, wide tracking. 11sp, w600.
+  static TextStyle get eyebrow => GoogleFonts.inter(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    color: CLColors.textMuted,
+    letterSpacing: 1.5,
     height: 1.4,
   );
 }
